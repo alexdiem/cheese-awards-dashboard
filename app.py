@@ -1,4 +1,4 @@
-from dash import Dash, html, dcc
+from dash import Dash, html, dcc, Input, Output
 from pathlib import Path
 
 import plotly.express as px
@@ -55,31 +55,62 @@ def generate_table(df, max_rows=10):
     )
 
 
+def query_category_code(df, category_code):
+    return df.query("category_code == '{}'".format(category_code))
+
+
+@app.callback(
+    Output('company_histogram_graph', 'figure'),
+    Input('cat_code_dropdown', 'value')
+)
+def render_company_histogram(cat_code):
+    data = query_category_code(df, cat_code)
+
+    fig = px.histogram(data, x='company')
+    fig.update_layout(
+        plot_bgcolor=colours['background'],
+        paper_bgcolor=colours['background'],
+        font_color=colours['text']
+    )
+    return fig
+
+
+@app.callback(
+    Output('country_histogram_graph', 'figure'),
+    Input('cat_code_dropdown', 'value')
+)
+def render_country_histogram(cat_code):
+    data = query_category_code(df, cat_code)
+
+    fig = px.histogram(data, x='country')
+    fig.update_layout(
+        plot_bgcolor=colours['background'],
+        paper_bgcolor=colours['background'],
+        font_color=colours['text']
+    )
+    return fig
+
+
+@app.callback(
+    Output('sunburst_graph', 'figure'),
+    Input('cat_code_dropdown', 'value')
+)
+def render_sunburst(cat_code):
+    data = query_category_code(df, cat_code)
+
+    fig = px.sunburst(data, path=["country", "company", "product_name"], values='rating')
+    fig.update_layout(
+        plot_bgcolor=colours['background'],
+        paper_bgcolor=colours['background'],
+        font_color=colours['text']
+    )
+    return fig
+
+
 df = load_data()
 df = etl(df)
 
-data = df.query("category_code == '5001'")
-
-company_histogram = px.histogram(data, x='company')
-company_histogram.update_layout(
-    plot_bgcolor=colours['background'],
-    paper_bgcolor=colours['background'],
-    font_color=colours['text']
-)
-
-country_histogram = px.histogram(data, x='country')
-country_histogram.update_layout(
-    plot_bgcolor=colours['background'],
-    paper_bgcolor=colours['background'],
-    font_color=colours['text']
-)
-
-sunburst = px.sunburst(data, path=["country", "company", "product_name"], values='rating')
-sunburst.update_layout(
-    plot_bgcolor=colours['background'],
-    paper_bgcolor=colours['background'],
-    font_color=colours['text']
-)
+cat_codes = df['category_code'].unique()
 
 app.layout = html.Div(
     style={'backgroundColor': colours['background']},
@@ -94,31 +125,41 @@ app.layout = html.Div(
 
         html.Div(
             [
-                html.H4(
-                    children="Table: World Cheese Awards 2021",
-                    style={
-                        'textAlign': 'center',
-                        'color': colours['text']
-                    }
+                html.Div(
+                    [
+                        html.Div(
+                            children=[
+                                html.Label('Dropdown'),
+                                dcc.Dropdown(
+                                    cat_codes, 
+                                    '5001',
+                                    id='cat_code_dropdown'
+                                )
+                            ]
+                        )
+                    ], style={'padding': 10, 'flex': 1}
                 ),
-                generate_table(df)
-            ]
+
+                html.Div(
+                    [
+                        html.H4(
+                            children="Table: World Cheese Awards 2021",
+                            style={
+                                'textAlign': 'center',
+                                'color': colours['text']
+                            }
+                        ),
+                        generate_table(df)
+                    ]
+                )
+            ], style={'display': 'flex', 'flex-direction': 'row'}
         ),
 
-        dcc.Graph(
-            id="company_histogram",
-            figure=company_histogram
-        ),
+        dcc.Graph(id="company_histogram_graph"),
 
-        dcc.Graph(
-            id="country_histogram",
-            figure=country_histogram
-        ),
+        dcc.Graph(id="country_histogram_graph"),
 
-        dcc.Graph(
-            id="sunburst",
-            figure=sunburst
-        )
+        dcc.Graph(id="sunburst_graph")
     ]
 )
 
