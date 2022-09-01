@@ -54,6 +54,15 @@ def render_attribute_histogram(attribute):
     return fig
 
 
+@callback(
+    Output('attribute_boxplot', 'figure'),
+    Input('attribute_dropdown', 'value')
+)
+def render_attribute_boxplot(attribute):
+    fig = px.box(df, x='quality', y=attribute, points="all")
+    return fig
+
+
 df = load_data()
 attributes = get_attributes(df)
 
@@ -113,7 +122,8 @@ layout = html.Div(
 
         html.Div(
             children=[
-                dcc.Graph(id="attribute_histogram")
+                dcc.Graph(id="attribute_histogram"),
+                dcc.Graph(id="attribute_boxplot")
             ]
         )
     ]
