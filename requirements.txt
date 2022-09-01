@@ -3,3 +3,4 @@ ipykernel
 nbformat
 pandas
 pathlib
+scipy
